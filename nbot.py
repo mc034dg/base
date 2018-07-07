@@ -11,6 +11,7 @@ import json
 from discord import Game
 #from discord.ext.commands import Bot
 import logging
+from api_call import iquidusExplorer_bal, iquidusExplorer_diff, iquidusExplorer_nethash, bytes_2_human_readable, coinMapper_bal, coinMapper_diff, coinMapper_nethash, UExplorer_bal, UExplorer_diff, UExplorer_nethash
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,102 +25,6 @@ BOT_PREFIX = ("?")
 
 bot = commands.Bot(command_prefix=BOT_PREFIX)
 
-def coinMapper_bal(coin, mn_needed, site, wallet):
-	try:
-		url = site + coin + '/address/' + wallet
-		response = requests.get(url, timeout=5)
-		soup = BeautifulSoup(response.content, 'html.parser')
-		bal = soup.find_all(class_="col-9 text-truncate p-2")[1]
-		b = bal.get_text()
-		ba = b.strip('\'')
-		return[0, coin + ' ' + ba.split('.')[0] + '/' + mn_needed]
-	except requests.exceptions.RequestException as e:
-		return[1, coin + ':' + str(e)]
-
-def coinMapper_nethash(coin, site):
-	try:
-		url = site + coin 
-		response = requests.get(url, timeout=5)
-		soup = BeautifulSoup(response.content, 'html.parser')
-		h = soup.find_all(class_="card-text text-dark")[0]
-		ha = h.get_text()
-		has = ha.strip()
-		hash = has.strip('\'')
-		return[0, coin + ' nethash = ' + hash]
-	except requests.exceptions.RequestException as e:
-		return[1, coin + ':' + str(e)]
-
-def coinMapper_diff(coin, site):
-	try:
-		url = site + coin 
-		response = requests.get(url, timeout=5)
-		soup = BeautifulSoup(response.content, 'html.parser')
-		d = soup.find_all(class_="card-text text-dark")[1]
-		di = d.get_text()
-		dif = di.strip()
-		diff = dif.strip('\'')
-		return[0, coin + ' diff = ' + diff]
-	except requests.exceptions.RequestException as e:
-		return[1, coin + ':' + str(e)]
-
-def iquidusExplorer_bal(coin, mn_needed, site, wallet):
-	try:
-		url = site + 'ext/getbalance/' + wallet
-		response = requests.get(url, timeout=5)
-		data = response.json()
-		return[0, coin + ' ' + str(int(data)) + '/' + mn_needed]
-	except requests.exceptions.RequestException as e:
-		return[1, coin + ':' + str(e)]
-
-def iquidusExplorer_diff(coin, site):
-	try:
-		url = site + 'api/getdifficulty'
-		response = requests.get(url, timeout=5)
-		data = response.json()
-		return[0, coin + ' diff = ' + str('%.3f'%(data))]
-	except requests.exceptions.RequestException as e:
-		return[1, coin + ' error: ' + str(e)]
-
-def iquidusExplorer_nethash(coin, site):
-	try:
-		url = site + 'api/getnetworkhashps'
-		response = requests.get(url, timeout=5)
-		data = response.json()
-		hash = bytes_2_human_readable(data)
-		return[0, coin + ' net hash = ' + hash]
-	except requests.exceptions.RequestException as e:
-		return[1, coin + ' error: ' + str(e)]
-
-
-def bytes_2_human_readable(number_of_bytes):
-    if number_of_bytes < 0:
-        raise ValueError("!!! number_of_bytes can't be smaller than 0 !!!")
-
-    step_to_greater_unit = 1024.
-
-    number_of_bytes = float(number_of_bytes)
-    unit = 'H/s'
-
-    if (number_of_bytes / step_to_greater_unit) >= 1:
-        number_of_bytes /= step_to_greater_unit
-        unit = 'Kh/s'
-
-    if (number_of_bytes / step_to_greater_unit) >= 1:
-        number_of_bytes /= step_to_greater_unit
-        unit = 'Mh/s'
-
-    if (number_of_bytes / step_to_greater_unit) >= 1:
-        number_of_bytes /= step_to_greater_unit
-        unit = 'Gh/s'
-
-    if (number_of_bytes / step_to_greater_unit) >= 1:
-        number_of_bytes /= step_to_greater_unit
-        unit = 'Th/s'
-
-    precision = 3
-    number_of_bytes = round(number_of_bytes, precision)
-
-    return str(number_of_bytes) + ' ' + unit
 
 @bot.command(name='coins',
 		description="list of coins this bot can help with",
@@ -137,19 +42,30 @@ async def status(ctx, coin: str):
 		ucoin = coin.upper()
 		if ucoin == 'ALL':
 			for c in sorted(config['coins']):
-				if config['coins'][c]['explorer'] == 'coinmapper':
-					error, message = coinMapper_bal(c, str(config['coins'][c]['mn_needed']), config['coins'][c]['site'], config['coins'][c]['wallet'])
+				if config['coins'][c]['explorer'] == 'iquidusExplorer':
+					error, balance = iquidusExplorer_bal(config['coins'][c]['site'], config['coins'][c]['wallet'])
+				elif config['coins'][c]['explorer'] == 'coinmapper':
+					error, balance = coinMapper_bal(c, config['coins'][c]['site'], config['coins'][c]['wallet'])
 				else:
-					error, message = iquidusExplorer_bal(c, str(config['coins'][c]['mn_needed']), config['coins'][c]['site'], config['coins'][c]['wallet'])
-        	        	
-				await ctx.send(message)
+					error, balance = UExplorer_bal(config['coins'][c]['site'], config['coins'][c]['wallet'])
+	
+				if error == 0:
+					await ctx.send(c + ' ' + balance + '/' + str(config['coins'][c]['mn_needed']))
+				else:
+					await ctx.send('got the following error for ' + c + ': ' + balance)
 	
 		elif ucoin in config['coins']:
-			if config['coins'][ucoin]['explorer'] == 'coinmapper':
-				error, message = coinMapper_bal(ucoin, str(config['coins'][ucoin]['mn_needed']), config['coins'][ucoin]['site'], config['coins'][ucoin]['wallet'])
+			if config['coins'][ucoin]['explorer'] == 'iquidusExplorer':
+				error, balance = iquidusExplorer_bal(config['coins'][ucoin]['site'], config['coins'][ucoin]['wallet'])
+			elif config['coins'][ucoin]['explorer'] == 'coinmapper':
+				error, balance = coinMapper_bal(ucoin, config['coins'][ucoin]['site'], config['coins'][ucoin]['wallet'])
 			else:
-				error, message = iquidusExplorer_bal(ucoin, str(config['coins'][ucoin]['mn_needed']), config['coins'][ucoin]['site'], config['coins'][ucoin]['wallet'])
-			await ctx.send(message)
+				error, balance = UExplorer_bal(config['coins'][ucoin]['site'], config['coins'][ucoin]['wallet'])
+		
+			if error == 0:
+				await ctx.send(ucoin + ' ' + balance + '/' + str(config['coins'][ucoin]['mn_needed']))
+			else:
+				await ctx.send('got the following error for ' + ucoin + ': ' + balance)
 		else:	
 			await ctx.send('I don\'t know about ' + coin + ' is it a scam?')
 
@@ -159,11 +75,16 @@ async def status(ctx, coin: str):
 async def diff(ctx, *, coin: str):
 	ucoin = coin.upper()
 	if ucoin in config['coins']:
-		if config['coins'][ucoin]['explorer'] == 'coinmapper':
-			error, message = coinMapper_diff(ucoin, config['coins'][ucoin]['site'])
+		if config['coins'][ucoin]['explorer'] == 'iquidusExplorer':
+			error, diff = iquidusExplorer_diff(config['coins'][ucoin]['site'])
+		elif config['coins'][ucoin]['explorer'] == 'coinmapper':
+			error, diff = coinMapper_diff(ucoin, config['coins'][ucoin]['site'])
 		else:
-			error, message = iquidusExplorer_diff(ucoin, config['coins'][ucoin]['site'])
-		await ctx.send(message)
+			error, diff = UExplorer_diff(config['coins'][ucoin]['site'])
+		if error == 0:
+			await ctx.send(ucoin + ' diff = ' + str(diff))
+		else:
+			await ctx.send(ucoin + ' error: ' + diff)
 	else:
 		await ctx.send('I don\'t know about that coin is it a scam?')
 
@@ -173,11 +94,16 @@ async def diff(ctx, *, coin: str):
 async def nethash(ctx, *, coin: str):
 	ucoin = coin.upper()
 	if ucoin in config['coins']:
-		if config['coins'][ucoin]['explorer'] == 'coinmapper':
-			error, message = coinMapper_nethash(ucoin, config['coins'][ucoin]['site'])
+		if config['coins'][ucoin]['explorer'] == 'iquidusExplorer':
+			error, nethash = iquidusExplorer_nethash(config['coins'][ucoin]['site'])
+		elif config['coins'][ucoin]['explorer'] == 'coinmapper':
+			error, nethash = coinMapper_nethash(ucoin, config['coins'][ucoin]['site'])
 		else:
-			error, message = iquidusExplorer_nethash(ucoin, config['coins'][ucoin]['site'])
-		await ctx.send(message)
+			error, nethash = UExplorer_nethash(config['coins'][ucoin]['site'])
+		if error == 0:
+			await ctx.send(ucoin + ' nethash = ' + str(nethash))
+		else:
+			await ctx.send(ucoin + ' error: ' + nethash)
 	else:
 		await ctx.send('I don\'t know about that coin is it a scam?')
 

@@ -5,6 +5,40 @@ import asyncio
 import aiohttp
 import json
 
+def UExplorer_nethash(site):
+	try:
+		url = site + '/api/chart/stat'
+		h = requests.get(url, timeout=5)
+		ha = h.text
+		has = json.loads(ha)
+		hash = str(round(has[0]['Network'] / 1000, 2)) 
+		return[0, hash + ' Gh/s']
+	except requests.exceptions.RequestException as e:
+		return[1, str(e)]
+
+def UExplorer_diff(site):
+	try:
+		url = site + '/api/chart/stat'
+		d = requests.get(url, timeout=5)
+		di = d.text
+		dif = json.loads(di)
+		return[0, str('%.3f'%(dif[0]['Difficulty']))]
+	except requests.exceptions.RequestException as e:
+		return[1, str(e)]
+
+def UExplorer_bal(site, wallet):
+	try:
+		url = site + '/wallets/' + wallet
+		response = requests.get(url, timeout=5)
+		soup = BeautifulSoup(response.content, 'html.parser')
+		b = soup.find_all(class_="table table-bordered")[0]
+		ba = b.find_all("td")[1]
+		bal = ba.get_text()
+		bala = bal.strip('\'')
+		return[0, bala.split('.')[0]]
+	except requests.exceptions.RequestException as e:
+		return[1, str(e)]
+
 def coinMapper_bal(coin, site, wallet):
 	try:
 		url = site + coin + '/address/' + wallet
