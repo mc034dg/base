@@ -1,0 +1,17 @@
+token: <BOT TOKEN>
+notify: .75
+coins:
+ GIN:
+  site: https://explorer.gincoin.io/
+  wallet: GKyFBEqYeYydwXoQNvkEUtLCtQxuxbRnUN
+  mn_needed: 1000
+  explorer: iquidusExplorer
+  discord: 464885086559404033
+  balance: 0
+ MCT:
+  site: http://explorer.mct.plus/
+  wallet: MKUFDLnVUC1zVvB2VC4o48k8gfUzf9siwn
+  mn_needed: 15000
+  explorer: iquidusExplorer
+  discord: 464885116187967488
+  balance: 0
