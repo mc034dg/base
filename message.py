@@ -27,10 +27,14 @@ class MyClient(discord.Client):
 		await self.wait_until_ready()
 		while not self.is_closed():
 			for c in sorted(config['coins']):
+				print('working on ' + c)
 				channel = self.get_channel(config['coins'][c]['discord']) # channel ID goes here
 				if config['coins'][c]['explorer'] == 'coinmapper':
 					b_error, balance = coinMapper_bal(c, config['coins'][c]['site'], config['coins'][c]['wallet'])
 					h_error, hash = coinMapper_nethash(c, config['coins'][c]['site'])
+				elif config['coins'][c]['explorer'] == 'UExplorer':
+					b_error, balance = UExplorer_bal(config['coins'][c]['site'], config['coins'][c]['wallet'])
+					h_error, hash = UExplorer_nethash(config['coins'][c]['site'])
 				else:
 					b_error, balance = iquidusExplorer_bal(config['coins'][c]['site'], config['coins'][c]['wallet'])
 					h_error, hash = iquidusExplorer_nethash(config['coins'][c]['site'])
@@ -43,7 +47,7 @@ class MyClient(discord.Client):
 				else:
 					print(c + ' ' + balance + ' less then ' + str(config['notify']) + ' percent')
 				config['coins'][c]['balance'] = balance
-				await asyncio.sleep(5) # task runs every 60 seconds
+				await asyncio.sleep(60) # task runs every 60 seconds
 
 client = MyClient()
 client.run(config['token'])
