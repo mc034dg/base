@@ -1,17 +1,9 @@
 import yaml
 import discord
-import requests
-import requests.exceptions
 from discord.ext import commands
-from bs4 import BeautifulSoup
-import random
-import asyncio
-import aiohttp
-import json
 from discord import Game
-#from discord.ext.commands import Bot
 import logging
-from api_call import iquidusExplorer_bal, iquidusExplorer_diff, iquidusExplorer_nethash, bytes_2_human_readable, coinMapper_bal, coinMapper_diff, coinMapper_nethash, UExplorer_bal, UExplorer_diff, UExplorer_nethash
+from api_call import iquidusExplorer_bal, iquidusExplorer_diff, iquidusExplorer_nethash, bytes_2_human_readable, coinMapper_bal, coinMapper_diff, coinMapper_nethash, UExplorer_bal, UExplorer_diff, UExplorer_nethash, unknown_coin, MN_ready
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,7 +11,6 @@ with open('config.yml') as c:
     config = yaml.load(c)
 
 
-#	'folm': ('https://folm.uexplorer.me/wallets/', 'FZPchqX7pY8AEABrHHuFwTqJHttN3r7YJW', 5000),
 
 BOT_PREFIX = ("?")
 
@@ -35,7 +26,6 @@ bot = commands.Bot(command_prefix=BOT_PREFIX)
 #		return(1)
 #	else:
 #		return(0)
-
 
 @bot.command(name='coins',
 		description="list of coins this bot can help with",
@@ -71,6 +61,9 @@ async def status(ctx, coin: str):
 	
 				if error == 0:
 					await ctx.send(c + ' ' + balance + '/' + str(config['coins'][c]['mn_needed']))
+			
+					if int(balance) >= config['coins'][c]['mn_needed']:
+						await ctx.send(MN_ready(ctx, c, config['admin']))
 				else:
 					await ctx.send('got the following error for ' + c + ': ' + balance)
 	
@@ -84,14 +77,17 @@ async def status(ctx, coin: str):
 		
 			if error == 0:
 				await ctx.send(ucoin + ' ' + balance + '/' + str(config['coins'][ucoin]['mn_needed']))
+				if int(balance) >= config['coins'][ucoin]['mn_needed']:
+					await ctx.send(MN_ready(ctx, ucoin, config['admin']))
 			else:
 				await ctx.send('got the following error for ' + ucoin + ': ' + balance)
 		else:	
-			await ctx.send('I don\'t know about ' + coin + ' is it a scam?')
+			await ctx.send(unknown_coin(ctx, coin))
 	else:
 		await ctx.send("{0.author.mention} hit me up over at {1.mention}".format(ctx, bot.get_channel(config['listen'])))
 
 @bot.command(name='diff',
+		aliases=['netdiff', 'difficulty'],
 		description="diff for the coin",
 		brief="diff for the coin")
 async def diff(ctx, *, coin: str):
@@ -109,11 +105,12 @@ async def diff(ctx, *, coin: str):
 			else:
 				await ctx.send(ucoin + ' error: ' + diff)
 		else:
-			await ctx.send('I don\'t know about that coin is it a scam?')
+			await ctx.send(unknown_coin(ctx, coin))
 	else:
 		await ctx.send("{0.author.mention} hit me up over at {1.mention}".format(ctx, bot.get_channel(config['listen'])))
 
 @bot.command(name='nethash',
+		aliases=['hash', 'net'],
 		description="to show net hash for the coin",
 		brief="to show net hash for the coin")
 async def nethash(ctx, *, coin: str):
@@ -131,7 +128,7 @@ async def nethash(ctx, *, coin: str):
 			else:
 				await ctx.send(ucoin + ' error: ' + nethash)
 		else:
-			await ctx.send('I don\'t know about that coin is it a scam?')
+			await ctx.send(unknown_coin(ctx, coin))
 	else:
 		await ctx.send("{0.author.mention} hit me up over at {1.mention}".format(ctx, bot.get_channel(config['listen'])))
 

@@ -4,6 +4,26 @@ from bs4 import BeautifulSoup
 import asyncio
 import aiohttp
 import json
+import random
+
+def MN_ready(context, coin, admin):
+	possible_responses = [
+		admin + ' ' + coin + ' is ready take us to the moon',
+		'chop chop - ' + admin + ' ' + coin,
+		'Time to make the MN - ' + admin + ' ' + coin,
+		admin + ' we are missing out on rewards for ' + coin,
+	]
+	return(random.choice(possible_responses))
+
+def unknown_coin(context, coin):
+	possible_responses = [
+		'I don\'t know about ' + coin + ' is it a scam?',
+		context.message.author.mention + ' is there an explorer for ' + coin + '?',
+		context.message.author.mention + ' send me 42.35 nlab\'s and the link to the explorer for ' + coin + ' and I will think about adding it',
+		context.message.author.mention + ' is it really worth adding ' + coin + ' or will it be dead in a week or two!',
+		context.message.author.mention + ' hold my beer and I will add that one',
+	]
+	return(random.choice(possible_responses))
 
 def UExplorer_nethash(site):
 	try:

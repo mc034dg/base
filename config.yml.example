@@ -1,6 +1,7 @@
 token: <BOT TOKEN>
 notify: .75
 listen: 464885086559404033
+admin: <@169097752293146624>
 coins:
  GIN:
   site: https://explorer.gincoin.io/
