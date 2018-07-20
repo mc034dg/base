@@ -25,20 +25,40 @@ BOT_PREFIX = ("?")
 
 bot = commands.Bot(command_prefix=BOT_PREFIX)
 
+#def is_channel(channel_id):
+#	def predicate(ctx):
+#		return ctx.message.channel.id == channel_id
+#	return commands.check(predicate)
+#def listen_channel():
+#	if ctx.message.channel != bot.get_channel(config['listen']):
+#		await ctx.send("{0.author.mention} hit me up over at {1.mention}".format(ctx, bot.get_channel(config['listen']))) 
+#		return(1)
+#	else:
+#		return(0)
+
 
 @bot.command(name='coins',
 		description="list of coins this bot can help with",
 		brief="list of coins this bot can help with")
+#@is_channel(464885086559404033)
 async def coins(ctx):
+	print('channel = ' + str(ctx.message.channel))
+	if ctx.message.channel == bot.get_channel(config['listen']):
+	#if listen_channel():
 		coin_list = []
 		for coin in sorted(config['coins']):
 			coin_list.append(coin)
 		await ctx.send("coins : %s" % coin_list)
+	else:
+		await ctx.send("{0.author.mention} hit me up over at {1.mention}".format(ctx, bot.get_channel(config['listen']))) 
+
+
 
 @bot.command(name='status',
 		description="how many coins are ready for the next MasterNode",
 		brief="how many coins are ready for the next MasterNode")
 async def status(ctx, coin: str):
+	if ctx.message.channel == bot.get_channel(config['listen']):
 		ucoin = coin.upper()
 		if ucoin == 'ALL':
 			for c in sorted(config['coins']):
@@ -68,44 +88,52 @@ async def status(ctx, coin: str):
 				await ctx.send('got the following error for ' + ucoin + ': ' + balance)
 		else:	
 			await ctx.send('I don\'t know about ' + coin + ' is it a scam?')
+	else:
+		await ctx.send("{0.author.mention} hit me up over at {1.mention}".format(ctx, bot.get_channel(config['listen'])))
 
 @bot.command(name='diff',
 		description="diff for the coin",
 		brief="diff for the coin")
 async def diff(ctx, *, coin: str):
-	ucoin = coin.upper()
-	if ucoin in config['coins']:
-		if config['coins'][ucoin]['explorer'] == 'iquidusExplorer':
-			error, diff = iquidusExplorer_diff(config['coins'][ucoin]['site'])
-		elif config['coins'][ucoin]['explorer'] == 'coinmapper':
-			error, diff = coinMapper_diff(ucoin, config['coins'][ucoin]['site'])
+	if ctx.message.channel == bot.get_channel(config['listen']):
+		ucoin = coin.upper()
+		if ucoin in config['coins']:
+			if config['coins'][ucoin]['explorer'] == 'iquidusExplorer':
+				error, diff = iquidusExplorer_diff(config['coins'][ucoin]['site'])
+			elif config['coins'][ucoin]['explorer'] == 'coinmapper':
+				error, diff = coinMapper_diff(ucoin, config['coins'][ucoin]['site'])
+			else:
+				error, diff = UExplorer_diff(config['coins'][ucoin]['site'])
+			if error == 0:
+				await ctx.send(ucoin + ' diff = ' + str(diff))
+			else:
+				await ctx.send(ucoin + ' error: ' + diff)
 		else:
-			error, diff = UExplorer_diff(config['coins'][ucoin]['site'])
-		if error == 0:
-			await ctx.send(ucoin + ' diff = ' + str(diff))
-		else:
-			await ctx.send(ucoin + ' error: ' + diff)
+			await ctx.send('I don\'t know about that coin is it a scam?')
 	else:
-		await ctx.send('I don\'t know about that coin is it a scam?')
+		await ctx.send("{0.author.mention} hit me up over at {1.mention}".format(ctx, bot.get_channel(config['listen'])))
 
 @bot.command(name='nethash',
 		description="to show net hash for the coin",
 		brief="to show net hash for the coin")
 async def nethash(ctx, *, coin: str):
-	ucoin = coin.upper()
-	if ucoin in config['coins']:
-		if config['coins'][ucoin]['explorer'] == 'iquidusExplorer':
-			error, nethash = iquidusExplorer_nethash(config['coins'][ucoin]['site'])
-		elif config['coins'][ucoin]['explorer'] == 'coinmapper':
-			error, nethash = coinMapper_nethash(ucoin, config['coins'][ucoin]['site'])
+	if ctx.message.channel == bot.get_channel(config['listen']):
+		ucoin = coin.upper()
+		if ucoin in config['coins']:
+			if config['coins'][ucoin]['explorer'] == 'iquidusExplorer':
+				error, nethash = iquidusExplorer_nethash(config['coins'][ucoin]['site'])
+			elif config['coins'][ucoin]['explorer'] == 'coinmapper':
+				error, nethash = coinMapper_nethash(ucoin, config['coins'][ucoin]['site'])
+			else:
+				error, nethash = UExplorer_nethash(config['coins'][ucoin]['site'])
+			if error == 0:
+				await ctx.send(ucoin + ' nethash = ' + str(nethash))
+			else:
+				await ctx.send(ucoin + ' error: ' + nethash)
 		else:
-			error, nethash = UExplorer_nethash(config['coins'][ucoin]['site'])
-		if error == 0:
-			await ctx.send(ucoin + ' nethash = ' + str(nethash))
-		else:
-			await ctx.send(ucoin + ' error: ' + nethash)
+			await ctx.send('I don\'t know about that coin is it a scam?')
 	else:
-		await ctx.send('I don\'t know about that coin is it a scam?')
+		await ctx.send("{0.author.mention} hit me up over at {1.mention}".format(ctx, bot.get_channel(config['listen'])))
 
 #@client.command(name='8ball',
 #                description="Answers a yes/no question.",
@@ -139,12 +167,15 @@ async def on_ready():
 		description="report current btc price in USD",
 		brief="whats the value today?")
 async def bitcoin(ctx):
-    url = 'https://api.coindesk.com/v1/bpi/currentprice/BTC.json'
-    async with aiohttp.ClientSession() as session:  # Async HTTP request
-        raw_response = await session.get(url)
-        response = await raw_response.text()
-        response = json.loads(response)
-        await ctx.send(" Bitcoin price is: $" + response['bpi']['USD']['rate'])
+	if ctx.message.channel == bot.get_channel(config['listen']):
+		url = 'https://api.coindesk.com/v1/bpi/currentprice/BTC.json'
+		async with aiohttp.ClientSession() as session:  # Async HTTP request
+			raw_response = await session.get(url)
+			response = await raw_response.text()
+			response = json.loads(response)
+			await ctx.send(" Bitcoin price is: $" + response['bpi']['USD']['rate'])
+	else:
+		await ctx.send("{0.author.mention} hit me up over at {1.mention}".format(ctx, bot.get_channel(config['listen'])))
 
 
 async def list_servers():
