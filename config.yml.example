@@ -1,5 +1,6 @@
 token: <BOT TOKEN>
 notify: .75
+listen: 464885086559404033
 coins:
  GIN:
   site: https://explorer.gincoin.io/
